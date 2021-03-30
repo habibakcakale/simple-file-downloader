@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -24,6 +25,9 @@ namespace FileDownloader
         private static readonly AsyncRetryPolicy Policy = CreatePolicy();
         private readonly IHostApplicationLifetime applicationLifetime;
         private readonly IHttpClientFactory httpClientFactory;
+
+        private static readonly Regex PatternReplacer =
+            new("\\{(?<pattern>[a-zA-Z0-9\\.\\(\\)-:]*?)\\}", RegexOptions.Compiled);
 
         public FileDownloadService(IHostApplicationLifetime applicationLifetime, IHttpClientFactory httpClientFactory,
             ILogger<FileDownloadService> logger)
@@ -60,7 +64,7 @@ namespace FileDownloader
         private async Task ProcessLine(string downloadPath, KeyValuePair<string, string> pair)
         {
             var (fileName, url) = pair;
-            url = Regex.Replace(url, "\\{(?<pattern>[a-zA-Z0-9\\.\\(\\)-:]*?)\\}", match =>
+            url = PatternReplacer.Replace(url, match =>
             {
                 var exp = match.Groups["pattern"].Value.Split(":");
                 var state = CSharpScript.RunAsync<object>(exp[0],
@@ -71,14 +75,14 @@ namespace FileDownloader
                     ? string.Format($"{{0:{exp[1]}}}", state.ReturnValue)
                     : state.ReturnValue.ToString();
             });
-            var request = new HttpRequestMessage()
+            var httpClient = httpClientFactory.CreateClient();
+            httpClient.Timeout = Timeout.InfiniteTimeSpan;
+
+            using var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(url),
             };
-            var httpClient = httpClientFactory.CreateClient();
-            httpClient.Timeout = Timeout.InfiniteTimeSpan;
-
             var responseMessage = await httpClient.SendAsync(request);
             var stream = await responseMessage.Content.ReadAsStreamAsync();
             var fileStream = File.OpenWrite(Path.Join(downloadPath, fileName));
