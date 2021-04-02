@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -44,7 +42,7 @@ namespace FileDownloader
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build();
             var downloadModel = serializer.Deserialize<Model>(lines);
-            var tasks = downloadModel.Urls.Select(async pair =>
+            foreach (var pair in downloadModel.Urls)
             {
                 try
                 {
@@ -56,8 +54,8 @@ namespace FileDownloader
                     logger.LogError(e, "Exception occured while processing {Name}, {Url}", pair.Key, pair.Value);
                     Console.WriteLine(e);
                 }
-            });
-            await Task.WhenAll(tasks);
+            }
+
             applicationLifetime.StopApplication();
         }
 
