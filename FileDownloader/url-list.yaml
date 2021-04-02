@@ -1,3 +1,0 @@
-downloadPath: .
-urls:
-  adjust.csv: https://api.adjust.com/kpis/v1/xme294tghyps,4irxq0busj5s,ix01zo0oqqdc,ll2gkdnisef4,7vvjg83ph4ow,ka9nu0hfpr0g,4vnh2e3ytips,cnwfetdky0w0/cohorts.csv?&start_date={DateTime.Now.AddDays(-2):yyyy-MM-dd}&end_date={DateTime.Now.AddDays(-1):yyyy-MM-dd}&kpis=retained_users,ad_revenue_total&attribution_type=all&grouping=apps,partners,campaigns,day,countries,adgroups&period=day&cohort_period_filter=0-119&user_token=Gzau_RxwkNvy13PnzzsA

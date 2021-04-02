@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +12,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace FileDownloader
 {
@@ -37,11 +35,10 @@ namespace FileDownloader
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            var lines = await File.ReadAllTextAsync("url-list.yaml", Encoding.UTF8, cancellationToken);
-            var serializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build();
-            var downloadModel = serializer.Deserialize<Model>(lines);
+            var lines = File.OpenRead("url-list.json");
+            var downloadModel = await JsonSerializer.DeserializeAsync<Model>(lines,
+                new JsonSerializerOptions {PropertyNamingPolicy = JsonNamingPolicy.CamelCase},
+                cancellationToken);
             foreach (var pair in downloadModel.Urls)
             {
                 try
@@ -66,7 +63,7 @@ namespace FileDownloader
             {
                 var exp = match.Groups["pattern"].Value.Split(":");
                 var state = CSharpScript.RunAsync<object>(exp[0],
-                        ScriptOptions.Default.AddReferences(typeof(DateTime).Assembly).AddImports("System"))
+                        ScriptOptions.Default.AddImports("System"))
                     .GetAwaiter()
                     .GetResult();
                 return exp.Length > 1
