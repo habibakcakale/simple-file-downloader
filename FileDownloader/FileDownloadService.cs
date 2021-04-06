@@ -80,7 +80,7 @@ namespace FileDownloader
             };
             var responseMessage = await httpClient.SendAsync(request);
             var stream = await responseMessage.Content.ReadAsStreamAsync();
-            var fileStream = File.OpenWrite(Path.Join(downloadPath, fileName));
+            var fileStream = File.Create(Path.Join(downloadPath, fileName));
             await stream.CopyToAsync(fileStream);
         }
 
